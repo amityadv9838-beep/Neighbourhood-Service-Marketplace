@@ -1,0 +1,2508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeighbourHub – Local Services Marketplace</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,800;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- Google Maps API -->
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=places"></script>
+<!-- QR Code Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- Booking System -->
+<script src="js/booking-system.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #F5F0E8;
+    --warm-white: #FDFAF4;
+    --ink: #1A1208;
+    --bark: #4A3728;
+    --amber: #D4722A;
+    --amber-light: #E8934A;
+    --sage: #4A6741;
+    --sage-light: #6B8F62;
+    --sky: #2A5C8A;
+    --sky-light: #4A82B4;
+    --sand: #C4A882;
+    --mist: #E8E0D4;
+    --card-shadow: 0 2px 20px rgba(26,18,8,0.08), 0 1px 4px rgba(26,18,8,0.04);
+    --card-hover: 0 8px 40px rgba(26,18,8,0.14), 0 2px 8px rgba(26,18,8,0.06);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--warm-white);
+    color: var(--ink);
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(253,250,244,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--mist);
+    padding: 0 5%;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 68px;
+  }
+  .nav-logo {
+    font-family: 'Fraunces', serif;
+    font-size: 1.6rem; font-weight: 800;
+    color: var(--ink);
+    text-decoration: none;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .nav-logo span { color: var(--amber); }
+  .nav-dot {
+    width: 8px; height: 8px;
+    background: var(--amber); border-radius: 50%;
+    display: inline-block;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.4);opacity:.7} }
+
+  .nav-links { display: flex; gap: 2rem; align-items: center; list-style: none; }
+  .nav-links a { text-decoration: none; color: var(--bark); font-weight: 500; font-size: .9rem; transition: color .2s; }
+  .nav-links a:hover { color: var(--amber); }
+  .nav-cta { display: flex; gap: .75rem; align-items: center; }
+  
+  /* User Profile Section */
+  .user-profile {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 1rem;
+    background: rgba(212,114,42,.08);
+    border-radius: 50px;
+    border: 1.5px solid var(--amber);
+  }
+  
+  .user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--amber);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  
+  .user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  
+  .user-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--ink);
+  }
+  
+  .user-email {
+    font-size: 0.75rem;
+    color: var(--bark);
+  }
+  
+  .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    margin-top: 0.5rem;
+    min-width: 200px;
+    display: none;
+    z-index: 1000;
+  }
+  
+  .dropdown-menu.active {
+    display: block;
+  }
+  
+  .dropdown-menu a {
+    display: block;
+    padding: 0.75rem 1.25rem;
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 0.9rem;
+    border-bottom: 1px solid var(--mist);
+    transition: background 0.2s;
+  }
+  
+  .dropdown-menu a:last-child {
+    border-bottom: none;
+  }
+  
+  .dropdown-menu a:hover {
+    background: var(--cream);
+    color: var(--amber);
+  }
+  
+  .dropdown-logout {
+    padding: 0.75rem 1.25rem;
+    color: #E74C3C;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-top: 1px solid var(--mist);
+    cursor: pointer;
+    transition: background 0.2s;
+    display: block;
+    text-align: left;
+    background: none;
+    border: none;
+    width: 100%;
+  }
+  
+  .dropdown-logout:hover {
+    background: #FEE8E8;
+  }
+  
+  .hidden {
+    display: none !important;
+  }
+
+  .btn-ghost {
+    padding: .5rem 1.25rem; border: 1.5px solid var(--mist);
+    border-radius: 50px; font-family: 'DM Sans', sans-serif;
+    font-size: .875rem; font-weight: 500;
+    color: var(--bark); background: transparent; cursor: pointer;
+    transition: all .2s;
+  }
+  .btn-ghost:hover { border-color: var(--amber); color: var(--amber); }
+  .btn-primary {
+    padding: .5rem 1.25rem;
+    background: var(--amber); border: none;
+    border-radius: 50px; font-family: 'DM Sans', sans-serif;
+    font-size: .875rem; font-weight: 600;
+    color: white; cursor: pointer;
+    transition: all .2s;
+  }
+  .btn-primary:hover { background: var(--amber-light); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(212,114,42,.35); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    padding: 68px 5% 0;
+    display: grid; grid-template-columns: 1fr 1fr;
+    align-items: center; gap: 4rem;
+    position: relative; overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 80% 40%, rgba(212,114,42,.08) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 60% at 10% 80%, rgba(74,103,65,.06) 0%, transparent 60%);
+  }
+  .hero-grid-pattern {
+    position: absolute; inset: 0;
+    background-image: linear-gradient(var(--mist) 1px, transparent 1px), linear-gradient(90deg, var(--mist) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: .4;
+  }
+  .hero-content { position: relative; z-index: 1; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: .5rem;
+    background: var(--cream); border: 1px solid var(--mist);
+    border-radius: 50px; padding: .35rem 1rem;
+    font-size: .8rem; font-weight: 500; color: var(--sage);
+    margin-bottom: 1.5rem;
+    animation: fadeInUp .6s ease both;
+  }
+  .hero-badge::before {
+    content: ''; width: 6px; height: 6px;
+    background: var(--sage); border-radius: 50%;
+  }
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(2.8rem, 5vw, 4.2rem);
+    font-weight: 800; line-height: 1.1;
+    margin-bottom: 1.5rem;
+    animation: fadeInUp .6s .1s ease both;
+  }
+  h1 em { font-style: italic; color: var(--amber); }
+  .hero-sub {
+    font-size: 1.1rem; line-height: 1.7;
+    color: var(--bark); max-width: 480px;
+    margin-bottom: 2.5rem;
+    animation: fadeInUp .6s .2s ease both;
+  }
+  .hero-actions {
+    display: flex; gap: 1rem; flex-wrap: wrap;
+    animation: fadeInUp .6s .3s ease both;
+  }
+  .btn-large {
+    padding: .875rem 2rem; border-radius: 50px;
+    font-family: 'DM Sans', sans-serif; font-size: 1rem;
+    font-weight: 600; cursor: pointer; transition: all .25s;
+  }
+  .btn-amber {
+    background: var(--amber); color: white; border: none;
+    box-shadow: 0 4px 20px rgba(212,114,42,.3);
+  }
+  .btn-amber:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(212,114,42,.4); background: var(--amber-light); }
+  .btn-outline {
+    background: transparent; color: var(--bark);
+    border: 2px solid var(--mist);
+  }
+  .btn-outline:hover { border-color: var(--bark); transform: translateY(-2px); }
+
+  .hero-stats {
+    display: flex; gap: 2.5rem; margin-top: 3rem;
+    animation: fadeInUp .6s .4s ease both;
+  }
+  .stat-item { display: flex; flex-direction: column; }
+  .stat-num {
+    font-family: 'Fraunces', serif;
+    font-size: 1.8rem; font-weight: 800; color: var(--ink);
+    line-height: 1;
+  }
+  .stat-num span { color: var(--amber); }
+  .stat-label { font-size: .78rem; color: var(--bark); margin-top: .2rem; font-weight: 500; letter-spacing: .02em; text-transform: uppercase; }
+
+  /* Hero visual */
+  .hero-visual {
+    position: relative; z-index: 1;
+    animation: fadeInRight .8s .2s ease both;
+  }
+  .hero-card-stack { position: relative; }
+  .hero-main-card {
+    background: white;
+    border-radius: 24px;
+    padding: 2rem;
+    box-shadow: var(--card-hover);
+    position: relative;
+  }
+  .card-map-placeholder {
+    height: 200px;
+    background: linear-gradient(135deg, #e8f0e8 0%, #d4e8d0 50%, #c4dcc0 100%);
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+  .map-pin {
+    position: absolute;
+    width: 32px; height: 32px;
+    background: var(--amber);
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(212,114,42,.4);
+  }
+  .map-pin::after {
+    content: '';
+    width: 10px; height: 10px;
+    background: white;
+    border-radius: 50%;
+    transform: rotate(45deg);
+  }
+  .map-pin:nth-child(1) { top: 30%; left: 25%; }
+  .map-pin:nth-child(2) { top: 50%; left: 55%; background: var(--sage); box-shadow: 0 4px 12px rgba(74,103,65,.4); }
+  .map-pin:nth-child(3) { top: 20%; left: 68%; background: var(--sky); box-shadow: 0 4px 12px rgba(42,92,138,.4); }
+  .map-road-h { position: absolute; height: 3px; background: rgba(255,255,255,.7); left: 0; right: 0; top: 45%; }
+  .map-road-v { position: absolute; width: 3px; background: rgba(255,255,255,.7); top: 0; bottom: 0; left: 40%; }
+
+  .provider-row { display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; }
+  .provider-avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; flex-shrink: 0;
+  }
+  .provider-info { flex: 1; }
+  .provider-name { font-weight: 600; font-size: .9rem; }
+  .provider-role { font-size: .78rem; color: var(--bark); }
+  .provider-rating {
+    display: flex; align-items: center; gap: .2rem;
+    font-size: .8rem; font-weight: 600; color: var(--amber);
+  }
+  .tag-chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .chip {
+    padding: .3rem .75rem; border-radius: 50px;
+    font-size: .75rem; font-weight: 500;
+  }
+  .chip-amber { background: rgba(212,114,42,.12); color: var(--amber); }
+  .chip-sage { background: rgba(74,103,65,.12); color: var(--sage); }
+  .chip-sky { background: rgba(42,92,138,.12); color: var(--sky); }
+  .chip-gray { background: var(--mist); color: var(--bark); }
+
+  .floating-card {
+    position: absolute;
+    background: white;
+    border-radius: 16px;
+    padding: 1rem 1.25rem;
+    box-shadow: var(--card-hover);
+    display: flex; align-items: center; gap: .75rem;
+    font-size: .85rem;
+  }
+  .floating-card-1 { top: -20px; right: -20px; }
+  .floating-card-2 { bottom: 30px; left: -30px; }
+  .fc-icon { font-size: 1.4rem; }
+  .fc-text strong { display: block; font-weight: 600; }
+  .fc-text span { font-size: .75rem; color: var(--bark); }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeInRight {
+    from { opacity: 0; transform: translateX(30px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  /* ── SEARCH BAR ── */
+  .search-section {
+    background: var(--cream);
+    padding: 3rem 5%;
+    border-top: 1px solid var(--mist);
+    border-bottom: 1px solid var(--mist);
+  }
+  .search-bar {
+    max-width: 720px; margin: 0 auto;
+    display: flex; gap: 0;
+    background: white; border-radius: 16px;
+    box-shadow: var(--card-shadow);
+    overflow: hidden; border: 1.5px solid var(--mist);
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .search-bar:focus-within { border-color: var(--amber); box-shadow: 0 0 0 4px rgba(212,114,42,.1); }
+  .search-field {
+    flex: 1; padding: 1rem 1.25rem;
+    border: none; outline: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: .95rem; color: var(--ink);
+    background: transparent;
+  }
+  .search-divider { width: 1px; background: var(--mist); margin: .75rem 0; }
+  .search-location {
+    padding: 1rem 1.25rem;
+    border: none; outline: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: .95rem; color: var(--bark);
+    background: transparent; width: 180px; cursor: pointer;
+  }
+  .search-btn {
+    padding: .75rem 1.5rem; margin: .4rem;
+    background: var(--amber); color: white;
+    border: none; border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600; cursor: pointer;
+    transition: background .2s;
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .search-btn:hover { background: var(--amber-light); }
+  .search-tags {
+    display: flex; gap: .5rem; justify-content: center;
+    flex-wrap: wrap; margin-top: 1rem;
+  }
+  .search-tag {
+    padding: .3rem .9rem;
+    background: white; border: 1px solid var(--mist);
+    border-radius: 50px; font-size: .8rem;
+    color: var(--bark); cursor: pointer;
+    transition: all .2s; font-weight: 500;
+  }
+  .search-tag:hover { background: var(--amber); color: white; border-color: var(--amber); }
+
+  /* ── SECTION COMMON ── */
+  section { padding: 5rem 5%; }
+  .section-label {
+    display: inline-block;
+    font-size: .75rem; font-weight: 600;
+    letter-spacing: .1em; text-transform: uppercase;
+    color: var(--amber); margin-bottom: .75rem;
+  }
+  .section-title {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(1.8rem, 3vw, 2.6rem);
+    font-weight: 800; line-height: 1.2;
+    margin-bottom: 1rem;
+  }
+  .section-sub {
+    font-size: 1rem; line-height: 1.7;
+    color: var(--bark); max-width: 520px;
+  }
+  .section-header { margin-bottom: 3rem; }
+  .section-header.centered { text-align: center; }
+  .section-header.centered .section-sub { margin: 0 auto; }
+
+  /* ── CATEGORIES ── */
+  .categories-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+  }
+  .category-card {
+    background: white;
+    border-radius: 20px;
+    padding: 1.75rem;
+    border: 1.5px solid var(--mist);
+    cursor: pointer;
+    transition: all .25s;
+    position: relative; overflow: hidden;
+  }
+  .category-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--card-color, var(--amber));
+    transform: scaleX(0); transform-origin: left;
+    transition: transform .25s;
+  }
+  .category-card:hover { transform: translateY(-4px); box-shadow: var(--card-hover); border-color: transparent; }
+  .category-card:hover::before { transform: scaleX(1); }
+  .cat-icon {
+    font-size: 2.2rem; margin-bottom: 1rem;
+    display: block;
+  }
+  .cat-name {
+    font-family: 'Fraunces', serif;
+    font-weight: 600; font-size: 1.05rem; margin-bottom: .3rem;
+  }
+  .cat-count { font-size: .8rem; color: var(--bark); }
+  .cat-arrow {
+    position: absolute; bottom: 1.5rem; right: 1.5rem;
+    opacity: 0; transform: translateX(-4px);
+    transition: all .2s; font-size: 1rem;
+    color: var(--amber);
+  }
+  .category-card:hover .cat-arrow { opacity: 1; transform: translateX(0); }
+
+  /* ── HOW IT WORKS ── */
+  .how-section { background: var(--cream); }
+  .steps-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+  .step-card {
+    background: white; border-radius: 24px;
+    padding: 2.5rem 2rem;
+    box-shadow: var(--card-shadow);
+    position: relative;
+    transition: transform .25s, box-shadow .25s;
+  }
+  .step-card:hover { transform: translateY(-4px); box-shadow: var(--card-hover); }
+  .step-number {
+    font-family: 'Fraunces', serif;
+    font-size: 4rem; font-weight: 800;
+    color: var(--mist); line-height: 1;
+    margin-bottom: .5rem;
+  }
+  .step-icon { font-size: 2rem; margin-bottom: 1rem; display: block; }
+  .step-title { font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 700; margin-bottom: .75rem; }
+  .step-desc { font-size: .9rem; line-height: 1.7; color: var(--bark); }
+  .step-connector {
+    position: absolute; top: 3rem; right: -1.25rem;
+    width: 2.5rem; height: 2px;
+    background: var(--mist); z-index: 2;
+    display: none;
+  }
+
+  /* ── PROVIDERS ── */
+  .providers-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+  .provider-card {
+    background: white; border-radius: 24px;
+    padding: 2rem; border: 1.5px solid var(--mist);
+    transition: all .25s; cursor: pointer;
+  }
+  .provider-card:hover { transform: translateY(-4px); box-shadow: var(--card-hover); border-color: transparent; }
+  .pc-header { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.25rem; }
+  .pc-avatar {
+    width: 56px; height: 56px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem; flex-shrink: 0;
+  }
+  .pc-info { flex: 1; }
+  .pc-name { font-family: 'Fraunces', serif; font-weight: 700; font-size: 1.05rem; margin-bottom: .15rem; }
+  .pc-role { font-size: .82rem; color: var(--bark); }
+  .pc-verified {
+    display: inline-flex; align-items: center; gap: .25rem;
+    background: rgba(74,103,65,.1); color: var(--sage);
+    padding: .2rem .6rem; border-radius: 50px;
+    font-size: .7rem; font-weight: 600; margin-top: .35rem;
+  }
+  .pc-stats { display: flex; gap: 1rem; margin-bottom: 1.25rem; }
+  .pc-stat { display: flex; flex-direction: column; }
+  .pc-stat-val { font-weight: 700; font-size: .95rem; }
+  .pc-stat-key { font-size: .72rem; color: var(--bark); text-transform: uppercase; letter-spacing: .04em; }
+  .pc-tags { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1.5rem; }
+  .pc-price {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 1.25rem; border-top: 1px solid var(--mist);
+  }
+  .pc-rate { font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 700; }
+  .pc-rate span { font-size: .8rem; font-weight: 400; color: var(--bark); font-family: 'DM Sans', sans-serif; }
+  .btn-book {
+    padding: .5rem 1.25rem;
+    background: var(--ink); color: white;
+    border: none; border-radius: 50px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: .85rem; font-weight: 600;
+    cursor: pointer; transition: all .2s;
+  }
+  .btn-book:hover { background: var(--amber); transform: translateY(-1px); }
+
+  /* ── TESTIMONIALS ── */
+  .testimonials-section { background: var(--ink); color: var(--cream); }
+  .testimonials-section .section-title { color: var(--cream); }
+  .testimonials-section .section-sub { color: rgba(245,240,232,.65); }
+  .testimonials-section .section-label { color: var(--amber-light); }
+  .reviews-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+  .review-card {
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 20px; padding: 2rem;
+    transition: all .25s;
+  }
+  .review-card:hover { background: rgba(255,255,255,.08); border-color: rgba(212,114,42,.3); }
+  .review-stars { color: var(--amber); font-size: 1rem; margin-bottom: 1.25rem; letter-spacing: .1em; }
+  .review-text { font-size: .95rem; line-height: 1.7; color: rgba(245,240,232,.85); margin-bottom: 1.5rem; font-style: italic; }
+  .review-author { display: flex; align-items: center; gap: .75rem; }
+  .ra-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(212,114,42,.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+  }
+  .ra-name { font-weight: 600; font-size: .88rem; }
+  .ra-info { font-size: .75rem; color: rgba(245,240,232,.5); }
+
+  /* ── BECOME PROVIDER ── */
+  .provider-cta {
+    background: linear-gradient(135deg, var(--amber) 0%, #b85a1a 100%);
+    color: white; text-align: center;
+    padding: 6rem 5%;
+    position: relative; overflow: hidden;
+  }
+  .provider-cta::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .provider-cta .section-title { color: white; max-width: 600px; margin: 0 auto 1rem; }
+  .provider-cta p { color: rgba(255,255,255,.8); max-width: 480px; margin: 0 auto 2.5rem; font-size: 1.05rem; line-height: 1.7; }
+  .cta-benefits {
+    display: flex; gap: 2rem; justify-content: center;
+    flex-wrap: wrap; margin-bottom: 2.5rem;
+  }
+  .cta-benefit {
+    display: flex; align-items: center; gap: .5rem;
+    font-weight: 500; font-size: .95rem;
+    color: rgba(255,255,255,.9);
+  }
+  .cta-benefit::before { content: '✓'; font-weight: 700; }
+  .btn-white {
+    padding: .875rem 2.5rem; border-radius: 50px;
+    background: white; color: var(--amber);
+    border: none; font-family: 'DM Sans', sans-serif;
+    font-size: 1rem; font-weight: 700;
+    cursor: pointer; transition: all .25s;
+    box-shadow: 0 4px 20px rgba(0,0,0,.2);
+    position: relative; z-index: 1;
+  }
+  .btn-white:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,.25); }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--ink); color: rgba(245,240,232,.7);
+    padding: 4rem 5% 2rem;
+  }
+  .footer-top {
+    display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 3rem; margin-bottom: 3rem;
+    padding-bottom: 3rem; border-bottom: 1px solid rgba(255,255,255,.1);
+  }
+  .footer-brand p { font-size: .9rem; line-height: 1.7; margin-top: .75rem; max-width: 280px; }
+  .footer-logo {
+    font-family: 'Fraunces', serif;
+    font-size: 1.5rem; font-weight: 800;
+    color: var(--cream);
+  }
+  .footer-logo span { color: var(--amber); }
+  .footer-col h4 {
+    font-family: 'Fraunces', serif;
+    font-size: 1rem; font-weight: 700;
+    color: var(--cream); margin-bottom: 1.25rem;
+  }
+  .footer-col ul { list-style: none; }
+  .footer-col ul li { margin-bottom: .6rem; }
+  .footer-col ul li a {
+    text-decoration: none; color: rgba(245,240,232,.6);
+    font-size: .875rem; transition: color .2s;
+  }
+  .footer-col ul li a:hover { color: var(--amber); }
+  .footer-bottom {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: .8rem;
+  }
+  .footer-social { display: flex; gap: .75rem; }
+  .social-btn {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; cursor: pointer; transition: all .2s;
+    text-decoration: none; color: var(--cream);
+  }
+  .social-btn:hover { background: var(--amber); border-color: var(--amber); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(26,18,8,.7); backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .3s;
+  }
+  .modal-overlay.active { opacity: 1; pointer-events: all; }
+  .modal {
+    background: white; border-radius: 28px;
+    padding: 2.5rem; max-width: 440px; width: 90%;
+    transform: translateY(20px); transition: transform .3s;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-overlay.active .modal { transform: translateY(0); }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; }
+  .modal-title { font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 800; }
+  .modal-close {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--mist); border: none; cursor: pointer;
+    font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
+    transition: background .2s;
+  }
+  .modal-close:hover { background: var(--cream); }
+  .form-group { margin-bottom: 1.25rem; }
+  .form-label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .5rem; color: var(--bark); }
+  .form-input {
+    width: 100%; padding: .75rem 1rem;
+    border: 1.5px solid var(--mist); border-radius: 12px;
+    font-family: 'DM Sans', sans-serif; font-size: .95rem;
+    outline: none; transition: border-color .2s;
+    background: var(--warm-white); color: var(--ink);
+  }
+  .form-input:focus { border-color: var(--amber); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .form-submit {
+    width: 100%; padding: .875rem;
+    background: var(--amber); color: white;
+    border: none; border-radius: 12px;
+    font-family: 'DM Sans', sans-serif; font-size: 1rem;
+    font-weight: 600; cursor: pointer; margin-top: .5rem;
+    transition: all .2s;
+  }
+  .form-submit:hover { background: var(--amber-light); }
+  .modal-switch {
+    text-align: center; margin-top: 1rem;
+    font-size: .875rem; color: var(--bark);
+  }
+  .modal-switch a { color: var(--amber); text-decoration: none; font-weight: 600; cursor: pointer; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 1024px) {
+    .categories-grid { grid-template-columns: repeat(2, 1fr); }
+    .footer-top { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 768px) {
+    .hero { grid-template-columns: 1fr; min-height: auto; padding-top: calc(68px + 3rem); }
+    .hero-visual { display: none; }
+    nav .nav-links { display: none; }
+    .steps-grid, .providers-grid, .reviews-grid { grid-template-columns: 1fr; }
+    .categories-grid { grid-template-columns: repeat(2, 1fr); }
+    .footer-top { grid-template-columns: 1fr; }
+    .search-bar { flex-direction: column; }
+    .search-divider { width: 100%; height: 1px; margin: 0; }
+    .search-location { width: 100%; }
+    .hero-stats { flex-wrap: wrap; gap: 1.5rem; }
+  }
+
+  /* Scroll reveal */
+  .reveal {
+    opacity: 0; transform: translateY(24px);
+    transition: opacity .6s, transform .6s;
+  }
+  .reveal.visible { opacity: 1; transform: none; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">Neighbour<span>Hub</span> <span class="nav-dot"></span></a>
+  <ul class="nav-links">
+    <li><a href="#categories">Services</a></li>
+    <li><a href="#providers">Providers</a></li>
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#reviews">Reviews</a></li>
+  </ul>
+  <div class="nav-cta">
+    <!-- Login/Join buttons (shown when not logged in) -->
+    <div id="authButtons" class="auth-buttons">
+      <button class="btn-ghost" onclick="openModal('login')">Log in</button>
+      <button class="btn-primary" onclick="openModal('signup')">Join Free</button>
+    </div>
+    
+    <!-- User Profile (shown when logged in) -->
+    <div id="userProfile" class="user-profile hidden">
+      <div class="user-avatar" id="userAvatarIcon">👤</div>
+      <div class="user-info">
+        <div class="user-name" id="userName">User</div>
+        <div class="user-email" id="userEmail">email@test.com</div>
+      </div>
+      <div style="position: relative;">
+        <button class="btn-ghost" style="padding: 0.3rem 0.6rem; border: none; background: none; cursor: pointer;" onclick="toggleDropdown()" title="Menu">⋮</button>
+        <div class="dropdown-menu" id="dropdownMenu">
+          <a href="#" onclick="event.preventDefault(); alert('Profile feature coming soon!')">👤 My Profile</a>
+          <a href="#" onclick="event.preventDefault(); alert('Bookings feature coming soon!')">📅 My Bookings</a>
+          <a href="#" onclick="event.preventDefault(); alert('Settings feature coming soon!')">⚙️ Settings</a>
+          <button class="dropdown-logout" onclick="handleLogout()">🚪 Logout</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid-pattern"></div>
+
+  <div class="hero-content">
+    <div class="hero-badge">🌿 Trusted by 12,000+ neighbours</div>
+    <h1>Your <em>neighbourhood,</em><br>fully serviced.</h1>
+    <p class="hero-sub">Connect instantly with vetted local plumbers, tutors, electricians, delivery agents and more — all within your community.</p>
+    <div class="hero-actions">
+      <button class="btn-large btn-amber" onclick="document.querySelector('.search-section').scrollIntoView({behavior:'smooth'})">Find a Service ↓</button>
+      <button class="btn-large btn-outline" onclick="openModal('provider')">Become a Provider</button>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <span class="stat-num">8<span>K+</span></span>
+        <span class="stat-label">Verified Providers</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">95<span>%</span></span>
+        <span class="stat-label">Satisfaction Rate</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">48<span>h</span></span>
+        <span class="stat-label">Avg. Response Time</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-visual">
+    <div class="hero-card-stack">
+      <div class="hero-main-card">
+        <div class="card-map-placeholder">
+          <div class="map-road-h"></div>
+          <div class="map-road-v"></div>
+          <div class="map-pin"></div>
+          <div class="map-pin"></div>
+          <div class="map-pin"></div>
+        </div>
+        <div class="provider-row">
+          <div class="provider-avatar" style="background:#FFF3EA;">🔧</div>
+          <div class="provider-info">
+            <div class="provider-name">Marcus K.</div>
+            <div class="provider-role">Licensed Plumber · 0.8 km away</div>
+          </div>
+          <div class="provider-rating">★ 4.9</div>
+        </div>
+        <div class="provider-row">
+          <div class="provider-avatar" style="background:#EAF2EA;">📚</div>
+          <div class="provider-info">
+            <div class="provider-name">Priya S.</div>
+            <div class="provider-role">Math & Science Tutor · 1.2 km away</div>
+          </div>
+          <div class="provider-rating">★ 5.0</div>
+        </div>
+        <div class="tag-chips">
+          <span class="chip chip-amber">Available Now</span>
+          <span class="chip chip-sage">Verified</span>
+          <span class="chip chip-sky">Insured</span>
+          <span class="chip chip-gray">Background Checked</span>
+        </div>
+      </div>
+
+      <div class="floating-card floating-card-1">
+        <span class="fc-icon">⚡</span>
+        <div class="fc-text">
+          <strong>New Booking</strong>
+          <span>Electrician · Just now</span>
+        </div>
+      </div>
+
+      <div class="floating-card floating-card-2">
+        <span class="fc-icon">🎉</span>
+        <div class="fc-text">
+          <strong>Job Completed!</strong>
+          <span>Rated 5 stars</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SEARCH -->
+<div class="search-section">
+  <div class="search-bar">
+    <input class="search-field" id="serviceSearch" type="text" placeholder="What service do you need? e.g. plumber, tutor…" onchange="handleServiceSearch()" onkeypress="if(event.key==='Enter') handleServiceSearch()">
+    <div class="search-divider"></div>
+    <input class="search-location" id="locationInput" type="text" placeholder="📍 Your location" onchange="handleLocationChange()">
+    <div id="addressSuggestions" style="position: absolute; background: white; border: 1px solid #E8E0D4; border-radius: 8px; margin-top: 8px; z-index: 1000; min-width: 300px; display: none;"></div>
+    <button class="search-btn" onclick="handleSearchClick()">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      Search
+    </button>
+  </div>
+  <div class="search-tags">
+    <span class="search-tag" onclick="selectServiceFromTag(this)">🔧 Plumbing</span>
+    <span class="search-tag" onclick="selectServiceFromTag(this)">📚 Tutoring</span>
+    <span class="search-tag" onclick="selectServiceFromTag(this)">⚡ Electrical</span>
+    <span class="search-tag" onclick="selectServiceFromTag(this)">🚚 Delivery</span>
+    <span class="search-tag" onclick="selectServiceFromTag(this)">🧹 Cleaning</span>
+    <span class="search-tag" onclick="selectServiceFromTag(this)">🐾 Pet Care</span>
+    <span class="search-tag" onclick="selectServiceFromTag(this)">🌿 Gardening</span>
+    <span class="search-tag" onclick="selectServiceFromTag(this)">� IT Support</span>
+  </div>
+  <div id="searchResults" style="margin-top: 1.5rem; display: none;"></div>
+</div>
+
+<!-- CATEGORIES -->
+<section id="categories">
+  <div class="section-header">
+    <span class="section-label">Browse by Category</span>
+    <h2 class="section-title">Every service your<br>home & family needs</h2>
+    <p class="section-sub">From emergency repairs to everyday help — find trusted professionals in your neighbourhood.</p>
+  </div>
+  <div class="categories-grid reveal">
+    <div class="category-card" style="--card-color:#D4722A">
+      <span class="cat-icon">🔧</span>
+      <div class="cat-name">Plumbing</div>
+      <div class="cat-count">342 providers nearby</div>
+      <span class="cat-arrow">→</span>
+    </div>
+    <div class="category-card" style="--card-color:#4A6741">
+      <span class="cat-icon">📚</span>
+      <div class="cat-name">Tutoring</div>
+      <div class="cat-count">518 providers nearby</div>
+      <span class="cat-arrow">→</span>
+    </div>
+    <div class="category-card" style="--card-color:#2A5C8A">
+      <span class="cat-icon">⚡</span>
+      <div class="cat-name">Electrical</div>
+      <div class="cat-count">287 providers nearby</div>
+      <span class="cat-arrow">→</span>
+    </div>
+    <div class="category-card" style="--card-color:#8A5C2A">
+      <span class="cat-icon">🚚</span>
+      <div class="cat-name">Delivery</div>
+      <div class="cat-count">204 providers nearby</div>
+      <span class="cat-arrow">→</span>
+    </div>
+    <div class="category-card" style="--card-color:#6B8F62">
+      <span class="cat-icon">🧹</span>
+      <div class="cat-name">Cleaning</div>
+      <div class="cat-count">410 providers nearby</div>
+      <span class="cat-arrow">→</span>
+    </div>
+    <div class="category-card" style="--card-color:#8A2A5C">
+      <span class="cat-icon">🐾</span>
+      <div class="cat-name">Pet Care</div>
+      <div class="cat-count">176 providers nearby</div>
+      <span class="cat-arrow">→</span>
+    </div>
+    <div class="category-card" style="--card-color:#2A8A5C">
+      <span class="cat-icon">🌿</span>
+      <div class="cat-name">Gardening</div>
+      <div class="cat-count">233 providers nearby</div>
+      <span class="cat-arrow">→</span>
+    </div>
+    <div class="category-card" style="--card-color:#5C2A8A">
+      <span class="cat-icon">🖥️</span>
+      <div class="cat-name">IT Support</div>
+      <div class="cat-count">298 providers nearby</div>
+      <span class="cat-arrow">→</span>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how" class="how-section">
+  <div class="section-header centered">
+    <span class="section-label">Simple Process</span>
+    <h2 class="section-title">Up and running in minutes</h2>
+    <p class="section-sub">No lengthy calls, no waiting. Book quality local help in three simple steps.</p>
+  </div>
+  <div class="steps-grid reveal">
+    <div class="step-card">
+      <div class="step-number">01</div>
+      <span class="step-icon">🔍</span>
+      <div class="step-title">Search your area</div>
+      <p class="step-desc">Enter your service and location. We'll surface verified, top-rated providers within your neighbourhood instantly.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-number">02</div>
+      <span class="step-icon">🤝</span>
+      <div class="step-title">Compare & connect</div>
+      <p class="step-desc">Browse profiles, check reviews and credentials. Message providers directly or request quotes before committing.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-number">03</div>
+      <span class="step-icon">✅</span>
+      <div class="step-title">Book & relax</div>
+      <p class="step-desc">Confirm the booking, pay securely in-app, and track your provider's arrival in real time. Rate after completion.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PROVIDERS -->
+<section id="providers">
+  <div class="section-header">
+    <span class="section-label">Top Rated Near You</span>
+    <h2 class="section-title">Meet your local experts</h2>
+    <p class="section-sub">Every provider is background-checked, insured, and reviewed by real neighbours.</p>
+  </div>
+  <div class="providers-grid reveal">
+
+    <div class="provider-card">
+      <div class="pc-header">
+        <div class="pc-avatar" style="background:#FFF3EA;">🔧</div>
+        <div class="pc-info">
+          <div class="pc-name">Marcus Khoury</div>
+          <div class="pc-role">Licensed Master Plumber</div>
+          <span class="pc-verified">✓ Verified Pro</span>
+        </div>
+      </div>
+      <div class="pc-stats">
+        <div class="pc-stat"><span class="pc-stat-val">★ 4.9</span><span class="pc-stat-key">Rating</span></div>
+        <div class="pc-stat"><span class="pc-stat-val">214</span><span class="pc-stat-key">Jobs Done</span></div>
+        <div class="pc-stat"><span class="pc-stat-val">0.8km</span><span class="pc-stat-key">Distance</span></div>
+      </div>
+      <div class="pc-tags">
+        <span class="chip chip-amber">Leak Repair</span>
+        <span class="chip chip-gray">Pipe Fitting</span>
+        <span class="chip chip-sage">Emergency</span>
+      </div>
+      <div class="pc-price">
+        <div class="pc-rate">$65<span>/hr</span></div>
+        <button class="btn-book" onclick="quickBooking(65, 'Plumbing', 'Expert Plumber')">Book Now</button>
+      </div>
+    </div>
+
+    <div class="provider-card">
+      <div class="pc-header">
+        <div class="pc-avatar" style="background:#EAF2EA;">📚</div>
+        <div class="pc-info">
+          <div class="pc-name">Priya Sharma</div>
+          <div class="pc-role">Maths & Science Tutor</div>
+          <span class="pc-verified">✓ Verified Pro</span>
+        </div>
+      </div>
+      <div class="pc-stats">
+        <div class="pc-stat"><span class="pc-stat-val">★ 5.0</span><span class="pc-stat-key">Rating</span></div>
+        <div class="pc-stat"><span class="pc-stat-val">89</span><span class="pc-stat-key">Students</span></div>
+        <div class="pc-stat"><span class="pc-stat-val">1.2km</span><span class="pc-stat-key">Distance</span></div>
+      </div>
+      <div class="pc-tags">
+        <span class="chip chip-sage">GCSE</span>
+        <span class="chip chip-sky">A-Level</span>
+        <span class="chip chip-gray">Online Available</span>
+      </div>
+      <div class="pc-price">
+        <div class="pc-rate">$45<span>/hr</span></div>
+        <button class="btn-book" onclick="quickBooking(45, 'Tutoring', 'Priya Sharma')">Book Now</button>
+      </div>
+    </div>
+
+    <div class="provider-card">
+      <div class="pc-header">
+        <div class="pc-avatar" style="background:#EAF0FA;">⚡</div>
+        <div class="pc-info">
+          <div class="pc-name">Daniel Osei</div>
+          <div class="pc-role">Certified Electrician</div>
+          <span class="pc-verified">✓ Verified Pro</span>
+        </div>
+      </div>
+      <div class="pc-stats">
+        <div class="pc-stat"><span class="pc-stat-val">★ 4.8</span><span class="pc-stat-key">Rating</span></div>
+        <div class="pc-stat"><span class="pc-stat-val">301</span><span class="pc-stat-key">Jobs Done</span></div>
+        <div class="pc-stat"><span class="pc-stat-val">2.0km</span><span class="pc-stat-key">Distance</span></div>
+      </div>
+      <div class="pc-tags">
+        <span class="chip chip-sky">Wiring</span>
+        <span class="chip chip-amber">Fuse Board</span>
+        <span class="chip chip-gray">Smart Home</span>
+      </div>
+      <div class="pc-price">
+        <div class="pc-rate">$75<span>/hr</span></div>
+        <button class="btn-book" onclick="quickBooking(75, 'Electrical', 'Daniel Osei')">Book Now</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section id="reviews" class="testimonials-section">
+  <div class="section-header centered">
+    <span class="section-label">Real Stories</span>
+    <h2 class="section-title">Loved by thousands of neighbours</h2>
+    <p class="section-sub">Real reviews from real people in your community.</p>
+  </div>
+  <div class="reviews-grid reveal">
+    <div class="review-card">
+      <div class="review-stars">★★★★★</div>
+      <p class="review-text">"Found a plumber within 20 minutes who fixed our burst pipe the same evening. Absolutely lifesaving. The booking process was incredibly smooth."</p>
+      <div class="review-author">
+        <div class="ra-avatar">👩</div>
+        <div>
+          <div class="ra-name">Sarah Mitchell</div>
+          <div class="ra-info">Homeowner · Booked a Plumber</div>
+        </div>
+      </div>
+    </div>
+    <div class="review-card">
+      <div class="review-stars">★★★★★</div>
+      <p class="review-text">"My son's maths grade went from a C to an A in two months. Priya is an exceptional tutor and NeighbourHub made it effortless to find her."</p>
+      <div class="review-author">
+        <div class="ra-avatar">👨</div>
+        <div>
+          <div class="ra-name">James Okafor</div>
+          <div class="ra-info">Parent · Booked a Tutor</div>
+        </div>
+      </div>
+    </div>
+    <div class="review-card">
+      <div class="review-stars">★★★★★</div>
+      <p class="review-text">"As a delivery agent, NeighbourHub has given me a steady stream of local gigs. Payments are always on time and the platform is simple to use."</p>
+      <div class="review-author">
+        <div class="ra-avatar">🚴</div>
+        <div>
+          <div class="ra-name">Aisha Patel</div>
+          <div class="ra-info">Delivery Agent · Service Provider</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROVIDER CTA -->
+<div class="provider-cta">
+  <span class="section-label" style="color:rgba(255,255,255,.7)">For Professionals</span>
+  <h2 class="section-title">Turn your skills into income</h2>
+  <p>Join 8,000+ local professionals already growing their business on NeighbourHub. Set your own rates, your own hours.</p>
+  <div class="cta-benefits">
+    <span class="cta-benefit">Free to join</span>
+    <span class="cta-benefit">Keep 90% of earnings</span>
+    <span class="cta-benefit">Instant payments</span>
+    <span class="cta-benefit">Dedicated support</span>
+  </div>
+  <button class="btn-white" onclick="openModal('provider')">Apply as a Provider →</button>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <div class="footer-logo">Neighbour<span>Hub</span></div>
+      <p>Connecting communities through trusted local services. Every professional is vetted, every booking is protected.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Services</h4>
+      <ul>
+        <li><a href="#">Plumbing</a></li>
+        <li><a href="#">Electrical</a></li>
+        <li><a href="#">Tutoring</a></li>
+        <li><a href="#">Delivery</a></li>
+        <li><a href="#">Cleaning</a></li>
+        <li><a href="#">Gardening</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="#">About Us</a></li>
+        <li><a href="#">Careers</a></li>
+        <li><a href="#">Press</a></li>
+        <li><a href="#">Blog</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Support</h4>
+      <ul>
+        <li><a href="#">Help Centre</a></li>
+        <li><a href="#">Safety</a></li>
+        <li><a href="#">Insurance</a></li>
+        <li><a href="#">Privacy Policy</a></li>
+        <li><a href="#">Terms of Service</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>©️ 2025 NeighbourHub Ltd. All rights reserved.</span>
+    <div class="footer-social">
+      <a class="social-btn" href="#" title="Twitter">𝕏</a>
+      <a class="social-btn" href="#" title="Instagram">📷</a>
+      <a class="social-btn" href="#" title="Facebook">f</a>
+      <a class="social-btn" href="#" title="LinkedIn">in</a>
+    </div>
+  </div>
+</footer>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modal" onclick="closeModalOnBg(event)">
+  <div class="modal" id="modalBox">
+    <!-- dynamic content -->
+  </div>
+</div>
+
+<script>
+  // Scroll reveal
+  const revealEls = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+  }, { threshold: 0.1 });
+  revealEls.forEach(el => observer.observe(el));
+
+  // Modal templates
+  const modals = {
+    login: `
+      <div class="modal-header">
+        <div class="modal-title">Welcome back</div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label">Email address</label>
+          <input class="form-input" type="email" id="loginEmail" placeholder="you@example.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input class="form-input" type="password" id="loginPassword" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="form-submit">Log In</button>
+      </form>
+      <div class="modal-switch">No account? <a onclick="openModal('signup')">Sign up free</a></div>`,
+
+    signup: `
+      <div class="modal-header">
+        <div class="modal-title">Join NeighbourHub</div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <form id="signupForm" onsubmit="handleSignup(event)">
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">First name</label><input class="form-input" type="text" id="signupFirstName" placeholder="Jane" required></div>
+          <div class="form-group"><label class="form-label">Last name</label><input class="form-input" type="text" id="signupLastName" placeholder="Doe" required></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email address</label>
+          <input class="form-input" type="email" id="signupEmail" placeholder="you@example.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input class="form-input" type="password" id="signupPassword" placeholder="Create a strong password" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Postcode / Area</label>
+          <input class="form-input" type="text" id="signupPostcode" placeholder="e.g. SW1A 1AA">
+        </div>
+        <button type="submit" class="form-submit">Create Account</button>
+      </form>
+      <div class="modal-switch">Already a member? <a onclick="openModal('login')">Log in</a></div>`,
+
+    provider: `
+      <div class="modal-header">
+        <div class="modal-title">Become a Provider</div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">First name</label><input class="form-input" type="text" placeholder="Your name"></div>
+        <div class="form-group"><label class="form-label">Last name</label><input class="form-input" type="text" placeholder="Surname"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Your trade / skill</label>
+        <input class="form-input" type="text" placeholder="e.g. Plumber, Electrician, Tutor…">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Years of experience</label>
+        <input class="form-input" type="number" placeholder="e.g. 5">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email address</label>
+        <input class="form-input" type="email" placeholder="you@example.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone number</label>
+        <input class="form-input" type="tel" placeholder="+44 7700 000 000">
+      </div>
+      <button class="form-submit" onclick="showToast('Application submitted! We'll be in touch within 24h 🎉')">Submit Application</button>`,
+
+    booking: `
+      <div class="modal-header">
+        <div class="modal-title">📍 Book a Service</div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div style="padding: 1.5rem; max-height: 70vh; overflow-y: auto;">
+        <!-- Services Grid -->
+        <div id="serviceSelection">
+          <h3 style="margin-bottom: 1rem; color: #1A1208;">Select a Service:</h3>
+          <div id="servicesGrid"></div>
+        </div>
+
+        <!-- Service Options -->
+        <div id="serviceOptions" style="display: none;"></div>
+
+        <!-- Booking Form -->
+        <div id="bookingForm" style="display: none;">
+          <div style="background: rgba(212,114,42,0.1); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+            <div style="font-weight: 600; margin-bottom: 0.25rem;" id="selectedServiceDisplay"></div>
+            <div style="font-size: 0.9rem; color: #4A3728;"><span id="selectedPriceDisplay"></span></div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">📅 Preferred Date</label>
+            <input class="form-input" id="bookingDate" type="date">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">🕐 Preferred Time</label>
+            <input class="form-input" id="bookingTime" type="time">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">📝 Description</label>
+            <textarea class="form-input" id="bookingDescription" rows="3" placeholder="Describe your issue..." style="resize:vertical;"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">📍 Your Location</label>
+            <button style="width: 100%; padding: 0.75rem; background: #4A6741; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-bottom: 0.5rem;" onclick="getCurrentLocation()">📍 Use Current Location</button>
+            <input class="form-input" id="bookingAddress" type="text" placeholder="Or enter address">
+          </div>
+
+          <div id="mapContainer" style="display: none; margin-bottom: 1.5rem;">
+            <div id="map" style="height: 250px; border-radius: 8px; border: 1.5px solid #E8E0D4;"></div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">📞 Contact Number</label>
+            <input class="form-input" id="bookingPhone" type="tel" placeholder="+1 (555) 000-0000">
+          </div>
+
+          <h4 style="margin-bottom: 1rem; color: #1A1208;">💳 Payment Method:</h4>
+          <div style="display: grid; gap: 0.75rem;">
+            <button style="padding: 1rem; border: 1.5px solid #E8E0D4; background: white; border-radius: 8px; cursor: pointer; font-weight: 600;" onclick="processPayment(window.selectedService.price, 'upi')">💳 UPI Payment</button>
+            <button style="padding: 1rem; border: 1.5px solid #E8E0D4; background: white; border-radius: 8px; cursor: pointer; font-weight: 600;" onclick="processPayment(window.selectedService.price, 'card')">🏦 Card Payment</button>
+            <button style="padding: 1rem; border: 1.5px solid #E8E0D4; background: white; border-radius: 8px; cursor: pointer; font-weight: 600;" onclick="processPayment(window.selectedService.price, 'wallet')">💰 Wallet</button>
+          </div>
+        </div>
+      </div>
+    `,
+  };
+
+  function openModal(type) {
+    document.getElementById('modalBox').innerHTML = modals[type];
+    document.getElementById('modal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal() {
+    document.getElementById('modal').classList.remove('active');
+    document.body.style.overflow = '';
+  }
+  function closeModalOnBg(e) {
+    if (e.target === document.getElementById('modal')) closeModal();
+  }
+
+  // Toast
+  function showToast(msg) {
+    closeModal();
+    const t = document.createElement('div');
+    t.textContent = msg;
+    Object.assign(t.style, {
+      position:'fixed', bottom:'2rem', left:'50%', transform:'translateX(-50%) translateY(20px)',
+      background:'#1A1208', color:'#F5F0E8', padding:'.875rem 1.75rem',
+      borderRadius:'50px', fontSize:'.9rem', fontFamily:'DM Sans,sans-serif',
+      fontWeight:'500', zIndex:'9999', opacity:'0',
+      transition:'all .3s', boxShadow:'0 8px 30px rgba(0,0,0,.25)', whiteSpace:'nowrap'
+    });
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity='1'; t.style.transform='translateX(-50%) translateY(0)'; }, 10);
+    setTimeout(() => { t.style.opacity='0'; setTimeout(() => t.remove(), 300); }, 3000);
+  }
+
+  // API Configuration
+  const API_BASE_URL = 'http://localhost:8000/api';
+
+  // Handle Login
+  async function handleLogin(event) {
+    event.preventDefault();
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    
+    console.log("Attempting login with:", { email });
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password })
+      });
+      
+      const data = await response.json();
+      console.log("Login response:", data);
+      
+      if (response.ok && data.success) {
+        showToast('Logged in successfully! 🎉');
+        localStorage.setItem('userEmail', email);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        setTimeout(() => {
+          closeModal();
+          updateNavBar();
+        }, 1500);
+      } else {
+        showToast('❌ ' + (data.message || 'Login failed'));
+      }
+    } catch (error) {
+      console.error('Login fetch error:', error);
+      showToast('⚠️ Connection error: ' + error.message);
+    }
+  }
+
+  // Handle Signup
+  async function handleSignup(event) {
+    event.preventDefault();
+    const firstName = document.getElementById('signupFirstName').value;
+    const lastName = document.getElementById('signupLastName').value;
+    const email = document.getElementById('signupEmail').value;
+    const password = document.getElementById('signupPassword').value;
+    const postcode = document.getElementById('signupPostcode').value;
+    
+    console.log("Attempting signup with:", { firstName, lastName, email });
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          firstName, 
+          lastName, 
+          email, 
+          password, 
+          postcode 
+        })
+      });
+      
+      const data = await response.json();
+      console.log("Signup response:", data);
+      
+      if (response.ok && data.success) {
+        showToast('✅ Account created! Welcome to NeighbourHub 🌿');
+        localStorage.setItem('userEmail', email);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        setTimeout(() => {
+          closeModal();
+          updateNavBar();
+        }, 1500);
+      } else {
+        showToast('❌ ' + (data.message || 'Signup failed'));
+      }
+    } catch (error) {
+      console.error('Signup fetch error:', error);
+      showToast('⚠️ Connection error: ' + error.message);
+    }
+  }
+
+  // Update navigation bar based on login state
+  function updateNavBar() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const authButtons = document.getElementById('authButtons');
+    const userProfile = document.getElementById('userProfile');
+    
+    if (user) {
+      // User is logged in
+      authButtons.classList.add('hidden');
+      userProfile.classList.remove('hidden');
+      
+      // Set user info
+      document.getElementById('userName').textContent = `${user.firstName} ${user.lastName}`;
+      document.getElementById('userEmail').textContent = user.email;
+      
+      // Set avatar with first letter
+      const initials = user.firstName.charAt(0).toUpperCase();
+      document.getElementById('userAvatarIcon').textContent = initials;
+    } else {
+      // User is not logged in
+      authButtons.classList.remove('hidden');
+      userProfile.classList.add('hidden');
+    }
+  }
+
+  // Toggle dropdown menu
+  function toggleDropdown() {
+    const dropdown = document.getElementById('dropdownMenu');
+    dropdown.classList.toggle('active');
+  }
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('dropdownMenu');
+    const userProfile = document.getElementById('userProfile');
+    
+    if (!userProfile.contains(event.target)) {
+      dropdown.classList.remove('active');
+    }
+  });
+
+  // Handle Logout
+  function handleLogout() {
+    localStorage.removeItem('user');
+    localStorage.removeItem('userEmail');
+    showToast('👋 Logged out successfully');
+    updateNavBar();
+  }
+
+  // Check login state on page load
+  window.addEventListener('load', function() {
+    updateNavBar();
+  });
+
+  // ========== BOOKING SYSTEM FUNCTIONS ==========
+  
+  // Get user's current location
+  async function getCurrentLocation() {
+    showToast('📍 Getting your location...');
+    
+    if (!navigator.geolocation) {
+      showToast('❌ Geolocation not supported in your browser');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        
+        try {
+          // Get address from coordinates
+          const address = await getAddressFromCoordinates(latitude, longitude);
+          document.getElementById('bookingAddress').value = address;
+          showMap(latitude, longitude);
+          showToast('✅ Location set successfully');
+        } catch (error) {
+          showToast('❌ Could not get address');
+        }
+      },
+      (error) => {
+        showToast('❌ Location access denied');
+      }
+    );
+  }
+
+  // Get address from coordinates
+  async function getAddressFromCoordinates(lat, lng) {
+    return new Promise((resolve, reject) => {
+      if (typeof google === 'undefined') {
+        reject('Google Maps not loaded');
+        return;
+      }
+
+      const geocoder = new google.maps.Geocoder();
+      geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          resolve(results[0].formatted_address);
+        } else {
+          reject('Unable to get address');
+        }
+      });
+    });
+  }
+
+  // Show map
+  function showMap(lat, lng) {
+    const mapContainer = document.getElementById('mapContainer');
+    if (!mapContainer) return;
+    
+    mapContainer.style.display = 'block';
+
+    if (typeof google === 'undefined') {
+      showToast('⚠️ Google Maps not fully loaded');
+      return;
+    }
+
+    const map = new google.maps.Map(document.getElementById('map'), {
+      zoom: 15,
+      center: { lat, lng }
+    });
+
+    new google.maps.Marker({
+      position: { lat, lng },
+      map: map,
+      title: 'Your Location'
+    });
+  }
+
+  // Generate services grid
+  function generateServicesGrid(containerId) {
+    const SERVICES = [
+      { id: 1, name: 'Plumbing', emoji: '🔧', min: 25 },
+      { id: 2, name: 'Electrical', emoji: '⚡', min: 20 },
+      { id: 3, name: 'Cleaning', emoji: '🧹', min: 30 },
+      { id: 4, name: 'Tutoring', emoji: '📚', min: 25 },
+      { id: 5, name: 'Delivery', emoji: '🚚', min: 10 },
+      { id: 6, name: 'Pet Care', emoji: '🐾', min: 15 },
+      { id: 7, name: 'Gardening', emoji: '🌿', min: 20 },
+      { id: 8, name: 'IT Support', emoji: '💻', min: 30 }
+    ];
+
+    const container = document.getElementById(containerId);
+    let html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem;">';
+    
+    SERVICES.forEach(service => {
+      html += `
+        <div style="background: white; border: 1.5px solid #E8E0D4; border-radius: 12px; padding: 1rem; cursor: pointer; transition: all 0.2s; text-align: center; hover: transform 0.2s;" onclick="selectService(${service.id}, '${service.name}', '${service.emoji}', ${service.min})" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">${service.emoji}</div>
+          <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem;">${service.name}</div>
+          <div style="color: #D4722A; font-weight: 600; font-size: 0.9rem;">From $${service.min}</div>
+        </div>
+      `;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  // Select service
+  function selectService(serviceId, serviceName, emoji, minPrice) {
+    const options = {
+      1: [
+        { name: 'Pipe Repair', price: 25, time: '30-45 min' },
+        { name: 'Drain Cleaning', price: 35, time: '45-60 min' },
+        { name: 'Tap Installation', price: 40, time: '60-90 min' },
+        { name: 'Leak Detection', price: 30, time: '30-45 min' },
+        { name: 'Water Heater Repair', price: 50, time: '60-90 min' }
+      ],
+      2: [
+        { name: 'Switch Installation', price: 20, time: '15-30 min' },
+        { name: 'Light Fitting', price: 30, time: '30-45 min' },
+        { name: 'Rewiring', price: 60, time: '120-180 min' },
+        { name: 'Fan Installation', price: 25, time: '30-45 min' },
+        { name: 'AC Service', price: 45, time: '60-90 min' }
+      ],
+      3: [
+        { name: 'Basic Cleaning', price: 30, time: '60-90 min' },
+        { name: 'Deep Cleaning', price: 60, time: '120-180 min' },
+        { name: 'Carpet Cleaning', price: 50, time: '90-120 min' },
+        { name: 'Kitchen Deep Clean', price: 45, time: '90-120 min' },
+        { name: 'Move-in/out Clean', price: 80, time: '180-240 min' }
+      ],
+      4: [
+        { name: 'Math Tutoring', price: 25, time: '60 min' },
+        { name: 'English Tutoring', price: 25, time: '60 min' },
+        { name: 'Science Tutoring', price: 30, time: '60 min' },
+        { name: 'Coding/Programming', price: 40, time: '60 min' },
+        { name: 'Exam Prep', price: 35, time: '60-90 min' }
+      ],
+      5: [
+        { name: 'Local Delivery (5km)', price: 10, time: '30-45 min' },
+        { name: 'Express Delivery (20km)', price: 20, time: '60-90 min' },
+        { name: 'Same Day Delivery', price: 15, time: '2-3 hours' },
+        { name: 'Heavy Item Moving', price: 35, time: '90-120 min' },
+        { name: 'Fragile Goods', price: 25, time: '60-90 min' }
+      ],
+      6: [
+        { name: 'Dog Walking', price: 15, time: '30-45 min' },
+        { name: 'Pet Grooming', price: 40, time: '60-90 min' },
+        { name: 'Pet Sitting (Daily)', price: 20, time: '30 min' },
+        { name: 'Vet Appointment', price: 25, time: '60 min' },
+        { name: 'Cat Care', price: 18, time: '30 min' }
+      ],
+      7: [
+        { name: 'Lawn Mowing', price: 25, time: '45-60 min' },
+        { name: 'Garden Cleaning', price: 30, time: '60-90 min' },
+        { name: 'Plant Maintenance', price: 20, time: '30-45 min' },
+        { name: 'Tree Trimming', price: 50, time: '90-120 min' },
+        { name: 'Garden Design', price: 60, time: '120-180 min' }
+      ],
+      8: [
+        { name: 'Computer Repair', price: 30, time: '45-60 min' },
+        { name: 'Laptop Service', price: 35, time: '60-90 min' },
+        { name: 'WiFi Setup', price: 25, time: '30-45 min' },
+        { name: 'Data Recovery', price: 50, time: '60-90 min' },
+        { name: 'Software Installation', price: 20, time: '30-45 min' }
+      ]
+    };
+
+    let html = `<div style="background: rgba(212,114,42,0.1); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;"><h3>${emoji} ${serviceName}</h3></div><div style="display: grid; gap: 0.75rem; margin-bottom: 1.5rem;">`;
+
+    (options[serviceId] || []).forEach(opt => {
+      html += `<div style="border: 1.5px solid #E8E0D4; border-radius: 8px; padding: 1rem; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s;" onclick="selectServiceOption('${serviceName}', '${opt.name}', ${opt.price})" onmouseover="this.style.backgroundColor='#fffbf0'; this.style.borderColor='#D4722A'" onmouseout="this.style.backgroundColor='white'; this.style.borderColor='#E8E0D4'"><div><div style="font-weight: 600;">${opt.name}</div><div style="font-size: 0.85rem; color: #8B7355; margin-top: 0.3rem;">⏱️ ${opt.time}</div></div><div style="color: #D4722A; font-weight: 600;">$${opt.price}</div></div>`;
+    });
+
+    html += '</div>';
+    
+    document.getElementById('serviceOptions').innerHTML = html;
+    document.getElementById('serviceOptions').style.display = 'block';
+    document.getElementById('serviceSelection').style.display = 'none';
+  }
+
+  // Select service option
+  function selectServiceOption(serviceName, optionName, price) {
+    window.selectedService = { serviceName, optionName, price };
+    document.getElementById('selectedServiceDisplay').textContent = `${serviceName} - ${optionName}`;
+    document.getElementById('selectedPriceDisplay').textContent = `Total: $${price}`;
+    document.getElementById('serviceOptions').style.display = 'none';
+    document.getElementById('bookingForm').style.display = 'block';
+    showToast(`✅ Selected: ${optionName} ($${price})`);
+  }
+
+  // Process payment
+  async function processPayment(amount, method) {
+    const phone = document.getElementById('bookingPhone').value;
+    const address = document.getElementById('bookingAddress').value;
+    const date = document.getElementById('bookingDate').value;
+    const time = document.getElementById('bookingTime').value;
+
+    if (!phone || !address || !date || !time) {
+      showToast('❌ Please fill all fields');
+      return;
+    }
+
+    const transactionId = 'TXN' + Date.now();
+    
+    // Show new payment success screen with 2 options (QR and UPI)
+    showPaymentSuccess(amount, transactionId, method);
+  }
+
+  // Show UPI Payment Modal
+  function showUPIPaymentModal(amount, transactionId) {
+    const upiModal = `
+      <div class="modal-header">
+        <div class="modal-title">💳 UPI Payment</div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div style="padding: 1.5rem; text-align: center;">
+        <div style="background: #f0f8ff; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+          <div style="font-size: 0.9rem; color: #4A3728; margin-bottom: 0.5rem;">Total Amount</div>
+          <div style="font-size: 2rem; font-weight: 700; color: #D4722A;">$${amount}</div>
+          <div style="font-size: 0.8rem; color: #4A3728; margin-top: 0.5rem;">ID: ${transactionId}</div>
+        </div>
+
+        <h4 style="margin-bottom: 1rem; text-align: left; color: #1A1208;">Select UPI App:</h4>
+        <div style="display: grid; gap: 0.75rem; margin-bottom: 1.5rem;">
+          <button style="padding: 1rem; border: 1.5px solid #E8E0D4; background: white; border-radius: 8px; cursor: pointer; font-weight: 600;" onclick="processUPIPayment(${amount}, '${transactionId}')">🔵 Google Pay</button>
+          <button style="padding: 1rem; border: 1.5px solid #E8E0D4; background: white; border-radius: 8px; cursor: pointer; font-weight: 600;" onclick="processUPIPayment(${amount}, '${transactionId}')">🔴 Paytm</button>
+          <button style="padding: 1rem; border: 1.5px solid #E8E0D4; background: white; border-radius: 8px; cursor: pointer; font-weight: 600;" onclick="processUPIPayment(${amount}, '${transactionId}')">🟣 PhonePe</button>
+        </div>
+
+        <h4 style="margin-bottom: 1rem; text-align: left; color: #1A1208;">Or Enter UPI ID:</h4>
+        <input type="text" id="upiId" placeholder="username@bankname" style="width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 1.5px solid #E8E0D4; border-radius: 8px; font-family: monospace;" />
+        
+        <h4 style="margin-bottom: 1rem; text-align: left; color: #1A1208;">Scan QR Code:</h4>
+        <div id="qrCodeContainer" style="text-align: center; padding: 1rem; background: #f9f9f9; border-radius: 8px; margin-bottom: 1.5rem;"></div>
+        
+        <button style="width: 100%; padding: 0.75rem; background: #D4722A; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-bottom: 0.5rem;" onclick="processUPIPayment(${amount}, '${transactionId}')">Confirm Payment</button>
+        <button style="width: 100%; padding: 0.75rem; border: 1.5px solid #E8E0D4; background: white; color: #4A3728; border-radius: 8px; cursor: pointer; font-weight: 600;" onclick="closeModal()">Cancel</button>
+      </div>
+    `;
+
+    document.getElementById('modalBox').innerHTML = upiModal;
+    document.getElementById('modal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    setTimeout(() => {
+      if (typeof QRCode !== 'undefined') {
+        const qrContainer = document.getElementById('qrCodeContainer');
+        qrContainer.innerHTML = '';
+        new QRCode(qrContainer, {
+          text: `upi://pay?pa=neighbourhub@upi&pn=NeighbourHub&am=${amount}&tn=Booking%23${transactionId}&tr=${transactionId}`,
+          width: 180,
+          height: 180
+        });
+      }
+    }, 100);
+  }
+
+  // Process UPI Payment
+  function processUPIPayment(amount, transactionId) {
+    showPaymentProcessing(amount, transactionId, 'UPI');
+  }
+
+  // Show Card Payment Modal
+  function showCardPaymentModal(amount, transactionId) {
+    const cardModal = `
+      <div class="modal-header">
+        <div class="modal-title">💳 Card Payment</div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div style="padding: 1.5rem;">
+        <div style="background: #f0f8ff; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; text-align: center;">
+          <div style="font-size: 0.9rem; color: #4A3728;">Amount: <strong style="color: #D4722A; font-size: 1.5rem;">$${amount}</strong></div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Cardholder Name</label>
+          <input class="form-input" type="text" placeholder="John Doe">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Card Number</label>
+          <input class="form-input" type="text" placeholder="1234 5678 9012 3456" maxlength="19">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Expiry</label>
+            <input class="form-input" type="text" placeholder="MM/YY" maxlength="5">
+          </div>
+          <div class="form-group">
+            <label class="form-label">CVV</label>
+            <input class="form-input" type="text" placeholder="123" maxlength="3">
+          </div>
+        </div>
+        <button style="width: 100%; padding: 0.75rem; background: #D4722A; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-bottom: 0.5rem;" onclick="showPaymentProcessing(${amount}, '${transactionId}', 'Card')">Pay $${amount}</button>
+        <button style="width: 100%; padding: 0.75rem; border: 1.5px solid #E8E0D4; background: white; color: #4A3728; border-radius: 8px; cursor: pointer; font-weight: 600;" onclick="closeModal()">Cancel</button>
+      </div>
+    `;
+
+    document.getElementById('modalBox').innerHTML = cardModal;
+    document.getElementById('modal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  // Show Wallet Payment Modal
+  function showWalletPaymentModal(amount, transactionId) {
+    const balance = Math.floor(Math.random() * 200 + 50);
+    const walletModal = `
+      <div class="modal-header">
+        <div class="modal-title">💰 Wallet Payment</div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div style="padding: 1.5rem; text-align: center;">
+        <div style="background: rgba(212,114,42,0.1); border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;">
+          <div style="font-size: 0.9rem; color: #4A3728; margin-bottom: 0.5rem;">Your Wallet Balance</div>
+          <div style="font-size: 2rem; font-weight: 700; color: #D4722A;">$${balance}</div>
+        </div>
+        
+        <div style="background: #fffbf0; border: 1.5px solid #D4722A; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+          <div style="font-weight: 600; color: #1A1208; margin-bottom: 0.5rem;">Amount to Pay</div>
+          <div style="font-size: 1.5rem; font-weight: 700; color: #D4722A;">$${amount}</div>
+        </div>
+
+        <button style="width: 100%; padding: 0.75rem; background: #D4722A; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-bottom: 0.5rem;" onclick="showPaymentProcessing(${amount}, '${transactionId}', 'Wallet')">Pay from Wallet</button>
+        <button style="width: 100%; padding: 0.75rem; border: 1.5px solid #E8E0D4; background: white; color: #4A3728; border-radius: 8px; cursor: pointer; font-weight: 600;" onclick="closeModal()">Cancel</button>
+      </div>
+    `;
+
+    document.getElementById('modalBox').innerHTML = walletModal;
+    document.getElementById('modal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  // Show payment processing
+  function showPaymentProcessing(amount, transactionId, method) {
+    const processingModal = `
+      <div class="modal-header">
+        <div class="modal-title">⏳ Processing Payment...</div>
+      </div>
+      <div style="padding: 2rem; text-align: center;">
+        <div style="width: 80px; height: 80px; background: rgba(212,114,42,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; animation: spin 2s linear infinite; font-size: 2rem;">
+          💳
+        </div>
+        <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">Processing ${method} Payment...</div>
+        <div style="font-size: 0.9rem; color: #4A3728; margin-bottom: 1.5rem;">Amount: <strong>$${amount}</strong></div>
+        
+        <div style="background: #f9f9f9; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+          <div style="font-size: 0.85rem; color: #4A3728; margin-bottom: 0.5rem;">Transaction ID</div>
+          <div style="font-family: monospace; font-weight: 600; color: #1A1208;">${transactionId}</div>
+        </div>
+
+        <div id="paymentProgress" style="background: #E8E0D4; border-radius: 8px; height: 8px; overflow: hidden; margin-bottom: 1.5rem;">
+          <div style="background: #D4722A; height: 100%; width: 0%; animation: progress 3s ease-in-out forwards;"></div>
+        </div>
+
+        <div id="paymentStatus" style="font-size: 0.9rem; color: #4A3728;">Verifying payment...</div>
+      </div>
+      <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes progress { to { width: 100%; } }
+      </style>
+    `;
+
+    document.getElementById('modalBox').innerHTML = processingModal;
+    
+    setTimeout(() => {
+      document.getElementById('paymentStatus').textContent = 'Confirming transaction...';
+    }, 1000);
+
+    setTimeout(() => {
+      showPaymentSuccess(amount, transactionId, method);
+    }, 3000);
+  }
+
+  // Show payment success
+  function showPaymentSuccess(amount, transactionId, method) {
+    const successModal = `
+      <div class="modal-header">
+        <div class="modal-title">💳 Complete Payment</div>
+      </div>
+      <div style="padding: 2rem; text-align: center;">
+        
+        <div style="background: rgba(212,114,42,0.1); border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;">
+          <div style="font-size: 0.9rem; color: #4A3728; margin-bottom: 0.5rem;">Amount to Pay</div>
+          <div style="font-size: 2.5rem; font-weight: 700; color: #D4722A;">$${amount}</div>
+          <div style="font-size: 0.85rem; color: #8B7355; margin-top: 0.5rem;">Transaction ID: ${transactionId}</div>
+        </div>
+
+        <h3 style="color: #1A1208; margin-bottom: 1rem;">Select Payment Method:</h3>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+          
+          <!-- QR CODE OPTION -->
+          <div style="border: 2px solid #E8E0D4; border-radius: 8px; padding: 1.5rem; cursor: pointer; transition: all 0.2s;" onclick="showQRPayment(${amount}, '${transactionId}')" onmouseover="this.style.borderColor='#D4722A'; this.style.boxShadow='0 4px 12px rgba(212,114,42,0.1)'" onmouseout="this.style.borderColor='#E8E0D4'; this.style.boxShadow='none'">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📲</div>
+            <div style="font-weight: 600; color: #1A1208; margin-bottom: 0.25rem;">Scan QR Code</div>
+            <div style="font-size: 0.85rem; color: #8B7355;">Use any UPI app</div>
+            <button style="width: 100%; padding: 0.75rem; background: #D4722A; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-top: 0.75rem;" onclick="showQRPayment(${amount}, '${transactionId}')">Generate QR 📲</button>
+          </div>
+
+          <!-- UPI DIRECT OPTION -->
+          <div style="border: 2px solid #E8E0D4; border-radius: 8px; padding: 1.5rem; cursor: pointer; transition: all 0.2s;" onclick="showUPIDirectPayment(${amount}, '${transactionId}')" onmouseover="this.style.borderColor='#D4722A'; this.style.boxShadow='0 4px 12px rgba(212,114,42,0.1)'" onmouseout="this.style.borderColor='#E8E0D4'; this.style.boxShadow='none'">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">💳</div>
+            <div style="font-weight: 600; color: #1A1208; margin-bottom: 0.25rem;">UPI ID Payment</div>
+            <div style="font-size: 0.85rem; color: #8B7355;">Enter UPI ID</div>
+            <button style="width: 100%; padding: 0.75rem; background: #D4722A; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-top: 0.75rem;" onclick="showUPIDirectPayment(${amount}, '${transactionId}')">Pay via UPI 💳</button>
+          </div>
+        </div>
+
+        <button style="width: 100%; padding: 0.75rem; border: 1.5px solid #E8E0D4; background: white; color: #4A3728; border-radius: 8px; cursor: pointer; font-weight: 600;" onclick="closeModal()">Cancel</button>
+      </div>
+    `;
+
+    document.getElementById('modalBox').innerHTML = successModal;
+    document.getElementById('modal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  // Show QR Code Payment
+  function showQRPayment(amount, transactionId) {
+    const qrModal = `
+      <div class="modal-header">
+        <div class="modal-title">📲 Scan QR Code to Pay</div>
+        <button class="modal-close" onclick="showPaymentSuccess(${amount}, '${transactionId}', 'UPI')">✕</button>
+      </div>
+      <div style="padding: 2rem; text-align: center;">
+        <div style="background: #f0f8ff; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+          <div style="font-size: 0.9rem; color: #4A3728; margin-bottom: 0.5rem;">Amount</div>
+          <div style="font-size: 2rem; font-weight: 700; color: #D4722A;">$${amount}</div>
+        </div>
+
+        <h4 style="color: #1A1208; margin-bottom: 1rem;">🔲 Scan with any UPI app:</h4>
+        
+        <div style="background: white; border: 2px solid #E8E0D4; border-radius: 12px; padding: 1.5rem; display: inline-block; margin-bottom: 1.5rem;">
+          <div id="qrCodeDisplay" style="width: 250px; height: 250px; display: flex; align-items: center; justify-content: center;">
+            <div style="text-align: center;">
+              <div style="font-size: 3rem; margin-bottom: 0.5rem;">📲</div>
+              <div style="font-size: 0.9rem; color: #8B7355;">Generating QR Code...</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="background: #fffbf0; border: 1px solid #D4722A; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+          <div style="font-size: 0.85rem; color: #8B7355; margin-bottom: 0.5rem;">📍 Location: NeighbourHub Services</div>
+          <div style="font-size: 0.85rem; color: #8B7355;">Transaction ID: ${transactionId}</div>
+        </div>
+
+        <button style="width: 100%; padding: 1rem; background: #52c41a; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1.1rem; margin-bottom: 0.75rem;" onclick="completeQRPayment(${amount}, '${transactionId}')">✅ Payment Done</button>
+        <button style="width: 100%; padding: 0.75rem; border: 1.5px solid #E8E0D4; background: white; color: #4A3728; border-radius: 8px; cursor: pointer; font-weight: 600;" onclick="showPaymentSuccess(${amount}, '${transactionId}', 'UPI')">Back to Options</button>
+      </div>
+    `;
+
+    document.getElementById('modalBox').innerHTML = qrModal;
+    document.getElementById('modal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    // Generate QR code
+    setTimeout(() => {
+      if (typeof QRCode !== 'undefined') {
+        const qrContainer = document.getElementById('qrCodeDisplay');
+        qrContainer.innerHTML = '';
+        new QRCode(qrContainer, {
+          text: `upi://pay?pa=neighbourhub@upi&pn=NeighbourHub&am=${amount}&tn=Booking%23${transactionId}&tr=${transactionId}`,
+          width: 250,
+          height: 250
+        });
+      }
+    }, 100);
+  }
+
+  // Complete QR Payment
+  function completeQRPayment(amount, transactionId) {
+    showPaymentProcessingFinal(amount, transactionId, 'UPI QR');
+  }
+
+  // Show Direct UPI Payment
+  function showUPIDirectPayment(amount, transactionId) {
+    const upiModal = `
+      <div class="modal-header">
+        <div class="modal-title">💳 UPI Payment</div>
+        <button class="modal-close" onclick="showPaymentSuccess(${amount}, '${transactionId}', 'UPI')">✕</button>
+      </div>
+      <div style="padding: 2rem; text-align: center;">
+        <div style="background: #f0f8ff; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+          <div style="font-size: 0.9rem; color: #4A3728; margin-bottom: 0.5rem;">Amount</div>
+          <div style="font-size: 2rem; font-weight: 700; color: #D4722A;">$${amount}</div>
+        </div>
+
+        <h4 style="color: #1A1208; margin-bottom: 1rem;">Enter your UPI ID:</h4>
+        
+        <input type="text" id="upiIdInput" placeholder="yourname@bankname" style="width: 100%; padding: 1rem; border: 1.5px solid #E8E0D4; border-radius: 8px; font-family: monospace; margin-bottom: 1.5rem; font-size: 1rem;" />
+
+        <div style="background: #fffbf0; border: 1px solid #D4722A; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+          <div style="font-size: 0.85rem; color: #8B7355;">Popular UPI IDs:</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.75rem;">
+            <div style="padding: 0.5rem; background: white; border-radius: 6px; cursor: pointer; font-size: 0.8rem;" onclick="document.getElementById('upiIdInput').value='user@googleplay'">user@googleplay</div>
+            <div style="padding: 0.5rem; background: white; border-radius: 6px; cursor: pointer; font-size: 0.8rem;" onclick="document.getElementById('upiIdInput').value='user@paytm'">user@paytm</div>
+          </div>
+        </div>
+
+        <button style="width: 100%; padding: 1rem; background: #D4722A; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1.1rem; margin-bottom: 0.75rem;" onclick="processUPIDirect(${amount}, '${transactionId}')">Pay $${amount} 💳</button>
+        <button style="width: 100%; padding: 0.75rem; border: 1.5px solid #E8E0D4; background: white; color: #4A3728; border-radius: 8px; cursor: pointer; font-weight: 600;" onclick="showPaymentSuccess(${amount}, '${transactionId}', 'UPI')">Back to Options</button>
+      </div>
+    `;
+
+    document.getElementById('modalBox').innerHTML = upiModal;
+    document.getElementById('modal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  // Process UPI Direct Payment
+  function processUPIDirect(amount, transactionId) {
+    const upiId = document.getElementById('upiIdInput').value.trim();
+    
+    if (!upiId) {
+      showToast('❌ Please enter UPI ID');
+      return;
+    }
+
+    if (!upiId.includes('@')) {
+      showToast('❌ Invalid UPI ID format');
+      return;
+    }
+
+    showPaymentProcessingFinal(amount, transactionId, 'UPI Direct');
+  }
+
+  // Final Payment Processing - Shows progress until complete
+  function showPaymentProcessingFinal(amount, transactionId, method) {
+    const processingModal = `
+      <div class="modal-header">
+        <div class="modal-title">⏳ Processing Payment...</div>
+      </div>
+      <div style="padding: 2rem; text-align: center;">
+        <div style="width: 100px; height: 100px; background: rgba(212,114,42,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; animation: spin 2s linear infinite; font-size: 3rem;">
+          💳
+        </div>
+        <div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 0.5rem;">Processing Payment...</div>
+        <div style="font-size: 0.9rem; color: #4A3728; margin-bottom: 1.5rem;">Amount: <strong>$${amount}</strong> via ${method}</div>
+        
+        <div id="paymentProgressFinal" style="background: #E8E0D4; border-radius: 8px; height: 8px; overflow: hidden; margin-bottom: 1.5rem;">
+          <div style="background: #52c41a; height: 100%; width: 0%; animation: progressBar 4s ease-in-out forwards;"></div>
+        </div>
+
+        <div style="background: #f9f9f9; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+          <div style="font-size: 0.8rem; color: #4A3728;">Transaction ID</div>
+          <div style="font-family: monospace; font-weight: 600; color: #1A1208;">${transactionId}</div>
+        </div>
+
+        <div id="statusMessageFinal" style="font-size: 0.9rem; color: #4A3728;">🔍 Verifying payment...</div>
+      </div>
+      <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes progressBar { to { width: 100%; } }
+      </style>
+    `;
+
+    document.getElementById('modalBox').innerHTML = processingModal;
+
+    // Simulate payment verification steps
+    setTimeout(() => {
+      document.getElementById('statusMessageFinal').textContent = '🔄 Confirming transaction...';
+    }, 1000);
+
+    setTimeout(() => {
+      document.getElementById('statusMessageFinal').textContent = '✅ Payment received!';
+    }, 2500);
+
+    // Show final success after 4 seconds
+    setTimeout(() => {
+      showFinalBookingSuccess(amount, transactionId, method);
+    }, 4000);
+  }
+
+  // Final Booking Success Screen
+  function showFinalBookingSuccess(amount, transactionId, method) {
+    const finalModal = `
+      <div class="modal-header">
+        <div class="modal-title">✅ Payment Successful!</div>
+      </div>
+      <div style="padding: 2rem; text-align: center;">
+        <div style="font-size: 5rem; margin-bottom: 1rem; animation: bounce 0.6s;">🎉</div>
+        
+        <div style="background: #f0fff4; border: 2px solid #52c41a; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;">
+          <div style="font-weight: 600; color: #1A1208; margin-bottom: 0.5rem;">Payment Confirmed</div>
+          <div style="font-size: 1.8rem; font-weight: 700; color: #52c41a; margin-bottom: 0.5rem;">$${amount}</div>
+          <div style="font-size: 0.9rem; color: #4A3728;">via ${method}</div>
+        </div>
+
+        <div style="background: #f9f9f9; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; text-align: left;">
+          <div style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid #E8E0D4;">
+            <div style="font-size: 0.8rem; color: #4A3728; margin-bottom: 0.3rem;">Transaction ID</div>
+            <div style="font-family: monospace; font-weight: 600; color: #1A1208;">${transactionId}</div>
+          </div>
+          <div>
+            <div style="font-size: 0.8rem; color: #4A3728; margin-bottom: 0.3rem;">Status</div>
+            <div style="color: #52c41a; font-weight: 600; font-size: 1.1rem;">✅ Successfully Paid</div>
+          </div>
+        </div>
+
+        <div style="background: rgba(212,114,42,0.1); border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;">
+          <div style="font-weight: 600; color: #1A1208; margin-bottom: 1rem;">✅ Booking Confirmed!</div>
+          <div style="font-size: 0.9rem; color: #4A3728; margin-bottom: 1rem;">Your service booking has been confirmed. A provider will contact you within 30 minutes.</div>
+          <div style="font-size: 0.85rem; color: white; background: #D4722A; padding: 1rem; border-radius: 6px;">
+            <div style="margin-bottom: 0.5rem;"><strong>📞 Provider:</strong> <span id="providerNameFinal">Will be assigned</span></div>
+            <div style="margin-bottom: 0.5rem;"><strong>⭐ Rating:</strong> <span id="providerRatingFinal">4.8+</span></div>
+            <div><strong>🚗 ETA:</strong> 30-45 minutes</div>
+          </div>
+        </div>
+
+        <button style="width: 100%; padding: 1rem; background: #52c41a; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1.1rem; margin-bottom: 0.75rem;" onclick="saveBooking('${transactionId}', '${method}')">✅ Continue</button>
+        <button style="width: 100%; padding: 0.75rem; border: 1.5px solid #E8E0D4; background: white; color: #4A3728; border-radius: 8px; cursor: pointer; font-weight: 600;" onclick="location.reload()">Go Home</button>
+      </div>
+      <style>
+        @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+      </style>
+    `;
+
+    document.getElementById('modalBox').innerHTML = finalModal;
+  }
+
+  // Save booking to backend
+  async function saveBooking(transactionId, method) {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const phone = document.getElementById('bookingPhone').value;
+    const address = document.getElementById('bookingAddress').value;
+    const date = document.getElementById('bookingDate').value;
+    const time = document.getElementById('bookingTime').value;
+    const description = document.getElementById('bookingDescription').value;
+
+    try {
+      const response = await fetch('http://localhost:8000/api/booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service: window.selectedService.serviceName,
+          option: window.selectedService.optionName,
+          date,
+          time,
+          address,
+          phone,
+          description,
+          paymentMethod: method,
+          amount: window.selectedService.price,
+          userId: user.id || 'guest',
+          transactionId
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.success && data.booking) {
+        const provider = data.booking.provider;
+        document.getElementById('providerName').textContent = provider.name;
+        document.getElementById('providerRating').textContent = provider.rating + ' ⭐ (' + provider.reviews + ' reviews)';
+        showToast('✅ Booking confirmed! Reference: ' + data.booking.id);
+        localStorage.setItem('lastBooking', JSON.stringify(data.booking));
+      }
+    } catch (error) {
+      console.error('Booking save error:', error);
+      showToast('⚠️ Booking created but couldn\'t save details');
+    }
+  }
+
+  // ========== SEARCH & LOCATION FUNCTIONS ==========
+
+  // Service name mapping
+  const serviceMap = {
+    'plumbing': 'Plumbing',
+    'plumber': 'Plumbing',
+    'electrical': 'Electrical',
+    'electrician': 'Electrical',
+    'cleaning': 'Cleaning',
+    'tutor': 'Tutoring',
+    'tutoring': 'Tutoring',
+    'delivery': 'Delivery',
+    'pet': 'Pet Care',
+    'pet care': 'Pet Care',
+    'gardening': 'Gardening',
+    'garden': 'Gardening',
+    'it': 'IT Support',
+    'it support': 'IT Support',
+    'computer': 'IT Support'
+  };
+
+  // Handle location input with Google Places Autocomplete
+  function handleLocationChange() {
+    const input = document.getElementById('locationInput');
+    const value = input.value.trim();
+    
+    if (value.length < 2) {
+      document.getElementById('addressSuggestions').style.display = 'none';
+      return;
+    }
+
+    if (typeof google === 'undefined' || !google.maps) {
+      showToast('⚠️ Google Maps not fully loaded');
+      return;
+    }
+
+    const service = new google.maps.places.AutocompleteService();
+    
+    service.getPlacePredictions({ input: value }, (predictions, status) => {
+      if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+        const suggestionsDiv = document.getElementById('addressSuggestions');
+        suggestionsDiv.innerHTML = '';
+        
+        predictions.slice(0, 5).forEach(prediction => {
+          const div = document.createElement('div');
+          div.style.cssText = 'padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0;';
+          div.innerHTML = `📍 ${prediction.description}`;
+          div.onmouseover = () => div.style.backgroundColor = '#f9f9f9';
+          div.onmouseout = () => div.style.backgroundColor = 'white';
+          div.onclick = async () => {
+            document.getElementById('locationInput').value = prediction.description;
+            document.getElementById('locationInput').setAttribute('data-place-id', prediction.place_id);
+            suggestionsDiv.style.display = 'none';
+            showToast('✅ Location selected! Fetching details...');
+            
+            // Extract city/state from the selected place using Google Geocoding
+            await extractCityFromPlace(prediction.place_id, prediction.description);
+          };
+          suggestionsDiv.appendChild(div);
+        });
+        
+        suggestionsDiv.style.display = 'block';
+      }
+    });
+  }
+
+  // Extract city and state from Google Places using Geocoding
+  async function extractCityFromPlace(placeId, fullAddress) {
+    try {
+      if (typeof google === 'undefined' || !google.maps) {
+        showToast('⚠️ Google Maps not available');
+        return;
+      }
+
+      const geocoder = new google.maps.Geocoder();
+      
+      geocoder.geocode({ placeId: placeId }, (results, status) => {
+        if (status === google.maps.GeocoderStatus.OK && results[0]) {
+          const result = results[0];
+          let city = '';
+          let state = '';
+          let country = '';
+
+          // Extract city, state, and country from address components
+          result.address_components.forEach(component => {
+            if (component.types.includes('locality')) {
+              city = component.long_name;
+            }
+            if (component.types.includes('administrative_area_level_1')) {
+              state = component.long_name;
+            }
+            if (component.types.includes('country')) {
+              country = component.long_name;
+            }
+          });
+
+          // Store extracted location data
+          const locationData = {
+            fullAddress: fullAddress,
+            city: city || 'Unknown City',
+            state: state || 'Unknown State',
+            country: country || 'Unknown Country',
+            lat: result.geometry.location.lat(),
+            lng: result.geometry.location.lng(),
+            formatted: result.formatted_address
+          };
+
+          // Save to sessionStorage for use in search
+          sessionStorage.setItem('selectedLocation', JSON.stringify(locationData));
+
+          // Update the display
+          const displayText = city ? `${city}, ${state}` : fullAddress;
+          showToast(`✅ Location: ${displayText} (${country})`);
+
+          console.log('📍 Extracted Location:', locationData);
+        } else {
+          showToast('⚠️ Could not extract location details');
+        }
+      });
+    } catch (error) {
+      console.error('Error extracting city:', error);
+      showToast('⚠️ Error processing location');
+    }
+  }
+
+  // Handle service search
+  function handleServiceSearch() {
+    const searchInput = document.getElementById('serviceSearch').value.toLowerCase().trim();
+    
+    if (!searchInput) {
+      document.getElementById('searchResults').style.display = 'none';
+      return;
+    }
+
+    let matchedService = null;
+    
+    for (const [key, value] of Object.entries(serviceMap)) {
+      if (searchInput.includes(key)) {
+        matchedService = value;
+        break;
+      }
+    }
+
+    if (matchedService) {
+      showSearchResults(matchedService);
+    } else {
+      showToast('❌ Service not found. Try: Plumbing, Electrical, Cleaning, Tutoring, Delivery, Pet Care, Gardening, IT Support');
+    }
+  }
+
+  // Handle service tag selection
+  function selectServiceFromTag(element) {
+    const text = element.textContent.trim();
+    const service = text.split(' ').pop() === 'Care' ? 'Pet Care' : text.split(' ')[1] || text.split(' ')[0];
+    const serviceKey = service.toLowerCase();
+    
+    // Map emoji + text to service name
+    for (const [key, value] of Object.entries(serviceMap)) {
+      if (text.toLowerCase().includes(key) || serviceKey === value.toLowerCase()) {
+        document.getElementById('serviceSearch').value = value;
+        showSearchResults(value);
+        return;
+      }
+    }
+  }
+
+  // Show search results with available services from backend based on location
+  async function showSearchResults(serviceName) {
+    const locationInput = document.getElementById('locationInput').value || 'Your Location';
+    
+    // Try to get city from Google Maps extracted data first
+    let cityName = locationInput;
+    let fullLocationData = null;
+
+    try {
+      const storedLocation = sessionStorage.getItem('selectedLocation');
+      if (storedLocation) {
+        fullLocationData = JSON.parse(storedLocation);
+        cityName = fullLocationData.city;
+        console.log('📍 Using extracted location from Google Maps:', fullLocationData);
+      } else {
+        // Fallback: Extract city name from formatted address
+        const addressParts = locationInput.split(',');
+        if (addressParts.length > 1) {
+          cityName = addressParts[addressParts.length - 2].trim();
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing location data:', error);
+    }
+
+    showToast('🔍 Fetching providers from ' + cityName + '...');
+
+    try {
+      // Fetch providers from backend filtered by location and service
+      const response = await fetch(`http://localhost:8000/api/providers/search?location=${encodeURIComponent(cityName)}&service=${encodeURIComponent(serviceName)}`);
+      const data = await response.json();
+
+      if (!data.success || data.count === 0) {
+        showToast(`⚠️ No ${serviceName} providers found in ${cityName}. Showing all ${serviceName} providers...`);
+        // Fallback: Get all providers for this service
+        const fallbackResponse = await fetch(`http://localhost:8000/api/providers/search?service=${encodeURIComponent(serviceName)}`);
+        const fallbackData = await fallbackResponse.json();
+        displaySearchResults(fallbackData.providers, serviceName, locationInput, fallbackData.count);
+        return;
+      }
+
+      displaySearchResults(data.providers, serviceName, locationInput, data.count);
+    } catch (error) {
+      console.error('Error fetching providers:', error);
+      showToast('❌ Could not fetch providers. Please try again.');
+    }
+  }
+
+  // Display search results with provider details
+  function displaySearchResults(providers, serviceName, location, count) {
+    const serviceOptions = {
+      'Plumbing': [
+        { name: 'Pipe Repair', price: 25, time: '30-45 min' },
+        { name: 'Drain Cleaning', price: 35, time: '45-60 min' },
+        { name: 'Tap Installation', price: 40, time: '60-90 min' },
+        { name: 'Leak Detection', price: 30, time: '30-45 min' }
+      ],
+      'Electrical': [
+        { name: 'Switch Installation', price: 20, time: '15-30 min' },
+        { name: 'Light Fitting', price: 30, time: '30-45 min' },
+        { name: 'AC Service', price: 45, time: '60-90 min' },
+        { name: 'Fan Installation', price: 25, time: '30-45 min' }
+      ],
+      'Cleaning': [
+        { name: 'Basic Cleaning', price: 30, time: '60-90 min' },
+        { name: 'Deep Cleaning', price: 60, time: '120-180 min' },
+        { name: 'Kitchen Deep Clean', price: 45, time: '90-120 min' },
+        { name: 'Carpet Cleaning', price: 50, time: '90-120 min' }
+      ],
+      'Tutoring': [
+        { name: 'Math Tutoring', price: 25, time: '60 min' },
+        { name: 'Science Tutoring', price: 30, time: '60 min' },
+        { name: 'English Tutoring', price: 25, time: '60 min' },
+        { name: 'Coding/Programming', price: 40, time: '60 min' }
+      ],
+      'Delivery': [
+        { name: 'Local Delivery (5km)', price: 10, time: '30-45 min' },
+        { name: 'Express Delivery (20km)', price: 20, time: '60-90 min' },
+        { name: 'Same Day Delivery', price: 15, time: '2-3 hours' },
+        { name: 'Heavy Item Moving', price: 35, time: '90-120 min' }
+      ],
+      'Pet Care': [
+        { name: 'Dog Walking', price: 15, time: '30-45 min' },
+        { name: 'Pet Grooming', price: 40, time: '60-90 min' },
+        { name: 'Pet Sitting (Daily)', price: 20, time: '30 min' },
+        { name: 'Cat Care', price: 18, time: '30 min' }
+      ],
+      'Gardening': [
+        { name: 'Lawn Mowing', price: 25, time: '45-60 min' },
+        { name: 'Garden Cleaning', price: 30, time: '60-90 min' },
+        { name: 'Plant Maintenance', price: 20, time: '30-45 min' },
+        { name: 'Tree Trimming', price: 50, time: '90-120 min' }
+      ],
+      'IT Support': [
+        { name: 'Computer Repair', price: 30, time: '45-60 min' },
+        { name: 'Laptop Service', price: 35, time: '60-90 min' },
+        { name: 'WiFi Setup', price: 25, time: '30-45 min' },
+        { name: 'Data Recovery', price: 50, time: '60-90 min' }
+      ]
+    };
+
+    const options = serviceOptions[serviceName] || [];
+
+    let html = `
+      <div style="background: rgba(212,114,42,0.1); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+        <h3 style="margin: 0; color: #1A1208;">📍 ${serviceName} Services in ${location}</h3>
+        <div style="font-size: 0.9rem; color: #8B7355; margin-top: 0.5rem;">Found <strong>${count} providers</strong> available</div>
+      </div>
+      <div style="display: grid; gap: 0.75rem;">
+    `;
+
+    // Show each provider with service options
+    providers.forEach(provider => {
+      options.forEach(option => {
+        html += `
+          <div style="border: 1.5px solid #E8E0D4; border-radius: 8px; padding: 1rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+              <div>
+                <div style="font-weight: 600; color: #1A1208;">${option.name}</div>
+                <div style="font-size: 0.85rem; color: #8B7355; margin-top: 0.25rem;">
+                  👤 ${provider.name} | ⭐ ${provider.rating} (${provider.reviews} reviews) | ⏱️ ${option.time}
+                </div>
+                <div style="font-size: 0.75rem; color: #D4722A; margin-top: 0.25rem;">📍 ${provider.location}, ${provider.state}</div>
+              </div>
+              <div style="color: #D4722A; font-weight: 700; font-size: 1.1rem;">$${option.price}</div>
+            </div>
+            <button style="width: 100%; padding: 0.75rem; background: #D4722A; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-top: 0.75rem;" onclick="bookServiceFromSearch('${serviceName}', '${option.name}', ${option.price}, '${provider.name}')">Book ${provider.name} 🎯</button>
+          </div>
+        `;
+      });
+    });
+
+    html += '</div>';
+
+    const resultsDiv = document.getElementById('searchResults');
+    resultsDiv.innerHTML = html;
+    resultsDiv.style.display = 'block';
+
+    resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    showToast(`✅ Found ${count} ${serviceName} providers in ${location}`);
+  }
+
+  // Book service from search results
+  function bookServiceFromSearch(serviceName, optionName, price, providerName) {
+    const location = document.getElementById('locationInput').value || 'Your Location';
+    
+    // Set the selected service globally
+    window.selectedService = {
+      serviceName: serviceName,
+      optionName: optionName,
+      price: price,
+      location: location,
+      provider: providerName
+    };
+
+    // Set address in booking form
+    document.getElementById('bookingAddress').value = location;
+
+    // Show booking modal with pre-filled service
+    openModal('booking');
+
+    // Update the service display
+    document.getElementById('selectedServiceDisplay').textContent = `${serviceName} - ${optionName}`;
+    document.getElementById('selectedPriceDisplay').textContent = `Total: $${price} | Provider: ${providerName || 'TBD'}`;
+    document.getElementById('serviceSelection').style.display = 'none';
+    document.getElementById('bookingForm').style.display = 'block';
+
+    showToast('✅ Service selected! Complete your booking details.');
+  }
+
+  // Handle search button click
+  function handleSearchClick() {
+    const service = document.getElementById('serviceSearch').value.trim();
+    const location = document.getElementById('locationInput').value.trim();
+
+    if (!service) {
+      showToast('❌ Please enter a service');
+      return;
+    }
+
+    if (!location) {
+      showToast('❌ Please enter your location');
+      return;
+    }
+
+    handleServiceSearch();
+  }
+
+
+
+</script>
+</body>
+</html>
